@@ -1,4 +1,4 @@
-package wxbot
+package config
 
 import (
 	"flag"
@@ -10,9 +10,10 @@ import (
 
 type Config struct {
 	LoginType string `yaml:"loginType"`
+	Token     string `yaml:"token"`
 }
 
-func initConfig() (*Config, error) {
+func InitConfig() (*Config, error) {
 	c := &Config{}
 
 	path := os.Getenv("CONFIG_PATH")

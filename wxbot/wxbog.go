@@ -1,6 +1,8 @@
 package wxbot
 
 import (
+	"bot/config"
+	"bot/responder"
 	"fmt"
 	"log"
 
@@ -9,19 +11,17 @@ import (
 )
 
 type WechatBot struct {
-	bot *openwechat.Bot
+	bot       *openwechat.Bot
+	responder *responder.Responsder
 }
 
-func InitBot() *WechatBot {
+func InitBot(cfg *config.Config) *WechatBot {
 	b := &WechatBot{}
 
-	cfg, err := initConfig()
+	b.responder = responder.NewResponsder()
 
-	if err != nil {
-		panic(err)
-	}
-
-	err = b.init(cfg)
+	b.responder.Init(cfg)
+	err := b.init(cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -29,7 +29,7 @@ func InitBot() *WechatBot {
 	return b
 }
 
-func (w *WechatBot) init(cfg *Config) error {
+func (w *WechatBot) init(cfg *config.Config) error {
 	if cfg.LoginType == "desktop" {
 		w.bot = openwechat.DefaultBot(openwechat.Desktop)
 	} else {
