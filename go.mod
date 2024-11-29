@@ -1,5 +1,8 @@
-module wx-bot
+module wxbot
 
-go 1.23.3
+go 1.22.9
 
-require github.com/eatmoreapple/openwechat v1.4.8 // indirect
+require (
+	github.com/eatmoreapple/openwechat v1.4.8 // indirect
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e // indirect
+)
