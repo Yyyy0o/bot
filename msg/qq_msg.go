@@ -9,9 +9,9 @@ import (
 	"net/http"
 )
 
-var host = ""
+var qq_host = ""
 var groupId = ""
-var lastTime float64 = 0
+var qq_lastTime float64 = 1732753858
 
 func QQMessage(msgChan chan string) {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
@@ -30,7 +30,7 @@ func QQMessage(msgChan chan string) {
 func getUrl() []string {
 	reqBody := []byte(fmt.Sprintf(`{"group_id": %s,"count": 10,"reverseOrder": true}`, groupId))
 
-	resp, err := http.Post(host+"/get_group_msg_history", "application/json", bytes.NewBuffer(reqBody))
+	resp, err := http.Post(qq_host+"/get_group_msg_history", "application/json", bytes.NewBuffer(reqBody))
 
 	if err != nil {
 		log.Println("获取消息出错...")
@@ -57,13 +57,13 @@ func getUrl() []string {
 		if data, ok := dataMap["data"].(map[string]interface{}); ok {
 			if messages, ok := data["messages"].([]interface{}); ok {
 				result := make([]string, len(messages))
-				current := lastTime
+				current := qq_lastTime
 				for i, v := range messages {
 					if msg, ok := v.(map[string]interface{}); ok {
 						time := msg["time"].(float64)
 						if time > current {
 							result[i] = msg["raw_message"].(string)
-							lastTime = max(lastTime, time)
+							qq_lastTime = max(qq_lastTime, time)
 						}
 					}
 				}

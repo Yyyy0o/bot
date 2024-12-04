@@ -47,11 +47,11 @@ func (b *Bot) Run() {
 }
 
 func (b *Bot) SendMessage(name string, message string) {
-	fmt.Printf("发送消息%s : %s\n", name, message)
-	if !b.Alive {
+	if message == "" {
 		return
 	}
-	if message == "" {
+	fmt.Printf("bot %t 发送消息%s : %s\n", b.Alive, name, message)
+	if !b.Alive {
 		return
 	}
 	self, err := b.wxbot.GetCurrentUser()
