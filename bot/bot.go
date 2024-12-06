@@ -3,6 +3,8 @@ package bot
 import (
 	"bot/msg"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 
 	"github.com/eatmoreapple/openwechat"
@@ -67,7 +69,22 @@ func (b *Bot) SendMessage(name string, message msg.Message) {
 	}
 	for _, friend := range friends {
 		if friend.NickName == name {
-			friend.SendText(message.Content)
+			switch message.Type {
+			case "text":
+				friend.SendText(message.Content)
+			case "image":
+				// 1. 下载图片
+				resp, err := http.Get(message.Content)
+				if err != nil {
+					log.Fatalf("Failed to download image: %v", err)
+				}
+				defer resp.Body.Close()
+
+				if resp.StatusCode != http.StatusOK {
+					log.Fatalf("Failed to download image: HTTP status %d", resp.StatusCode)
+				}
+				friend.SendImage(resp.Body)
+			}
 			return
 		}
 	}

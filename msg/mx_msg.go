@@ -91,7 +91,10 @@ func (m *MxMessage) GetMessage() []Message {
 								Content: msg[0]["msg"].(string),
 							})
 						case "pic":
-
+							result = append(result, Message{
+								Type:    "image",
+								Content: msg[0]["url"].(string),
+							})
 						}
 
 						m.lastTime = max(msgData["createtime"].(float64), m.lastTime)
