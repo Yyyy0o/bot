@@ -10,35 +10,44 @@ import (
 	"time"
 )
 
-var mx_host = "https://mx.tg0536.cn"
-var mx_token = ""
-var mx_lastTime float64 = 1732753858
-
-func MxMessage(msgChan chan string) {
-	msg := queryMsg()
-
-	for _, v := range msg {
-		msgChan <- v
-	}
-
+type MxMessage struct {
+	Host     string
+	Token    string
+	lastTime float64
 }
 
-func queryMsg() []string {
-	viewReq()
+func (m *MxMessage) GetMessage() []Message {
+	// 调用view接口
+	viewBody := []byte(fmt.Sprintf(`{"rid":4617,"tt":%d}`, time.Now().Unix()))
+	req, err := http.NewRequest("POST", m.Host+"/4/api/room/view", bytes.NewBuffer(viewBody))
+	if err != nil {
+		fmt.Println("创建请求失败:", err)
+		return nil
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("token", m.Token)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("调用view出错...")
+		return nil
+	}
+	defer resp.Body.Close()
 
+	// 调用list接口
 	listBody := []byte(fmt.Sprintf(`{"rid":4617,"msgid":0,"pagesize":30,"tt":%d}`, time.Now().Unix()))
 
-	req, err := http.NewRequest("POST", mx_host+"/4/api/msg/list", bytes.NewBuffer(listBody))
+	req, err = http.NewRequest("POST", m.Host+"/4/api/msg/list", bytes.NewBuffer(listBody))
 	if err != nil {
 		fmt.Println("创建请求失败:", err)
 		return nil
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("token", mx_token)
+	req.Header.Set("token", m.Token)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	client = &http.Client{}
+	resp, err = client.Do(req)
 
 	if err != nil {
 		log.Println("获取消息列表出错...")
@@ -63,8 +72,8 @@ func queryMsg() []string {
 
 	if dataMap["code"] == float64(200) {
 		if messages, ok := dataMap["list"].([]interface{}); ok {
-			result := make([]string, len(messages))
-			current := mx_lastTime
+			result := make([]Message, len(messages))
+			current := m.lastTime
 			for _, msgData := range messages {
 				if msgData, ok := msgData.(map[string]interface{}); ok {
 					if msgData["createtime"].(float64) > current {
@@ -77,12 +86,15 @@ func queryMsg() []string {
 
 						switch msg[0]["type"].(string) {
 						case "text":
-							result = append(result, msg[0]["msg"].(string))
+							result = append(result, Message{
+								Type:    "text",
+								Content: msg[0]["msg"].(string),
+							})
 						case "pic":
 
 						}
 
-						mx_lastTime = max(msgData["createtime"].(float64), mx_lastTime)
+						m.lastTime = max(msgData["createtime"].(float64), m.lastTime)
 					}
 				}
 			}
@@ -91,29 +103,4 @@ func queryMsg() []string {
 	}
 
 	return nil
-}
-
-func viewReq() bool {
-	viewBody := []byte(fmt.Sprintf(`{"rid":4617,"tt":%d}`, time.Now().Unix()))
-
-	req, err := http.NewRequest("POST", mx_host+"/4/api/room/view", bytes.NewBuffer(viewBody))
-	if err != nil {
-		fmt.Println("创建请求失败:", err)
-		return false
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("token", mx_token)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-
-	if err != nil {
-		log.Println("调用view出错...")
-		return false
-	}
-
-	defer resp.Body.Close()
-
-	return true
 }

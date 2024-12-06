@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"bot/msg"
 	"fmt"
 	"os"
 
@@ -46,8 +47,8 @@ func (b *Bot) Run() {
 	}
 }
 
-func (b *Bot) SendMessage(name string, message string) {
-	if message == "" {
+func (b *Bot) SendMessage(name string, message msg.Message) {
+	if message.Content == "" {
 		return
 	}
 	fmt.Printf("bot %t 发送消息%s : %s\n", b.Alive, name, message)
@@ -66,7 +67,7 @@ func (b *Bot) SendMessage(name string, message string) {
 	}
 	for _, friend := range friends {
 		if friend.NickName == name {
-			friend.SendText(message)
+			friend.SendText(message.Content)
 			return
 		}
 	}

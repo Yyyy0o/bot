@@ -9,28 +9,19 @@ import (
 	"net/http"
 )
 
-var qq_host = ""
-var groupId = ""
-var qq_lastTime float64 = 1732753858
+type QQMessage struct {
+	Host     string
+	Group    string
+	lastTime float64
+}
 
-func QQMessage(msgChan chan string) {
+func (q *QQMessage) GetMessage() []Message {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	log.SetPrefix("[QQ_MSG]")
 
-	ary := getUrl()
-	if ary == nil {
-		return
-	}
+	reqBody := []byte(fmt.Sprintf(`{"group_id": %s,"count": 10,"reverseOrder": true}`, q.Group))
 
-	for _, v := range ary {
-		msgChan <- v
-	}
-}
-
-func getUrl() []string {
-	reqBody := []byte(fmt.Sprintf(`{"group_id": %s,"count": 10,"reverseOrder": true}`, groupId))
-
-	resp, err := http.Post(qq_host+"/get_group_msg_history", "application/json", bytes.NewBuffer(reqBody))
+	resp, err := http.Post(q.Host+"/get_group_msg_history", "application/json", bytes.NewBuffer(reqBody))
 
 	if err != nil {
 		log.Println("获取消息出错...")
@@ -56,14 +47,17 @@ func getUrl() []string {
 	if dataMap["status"] == "ok" {
 		if data, ok := dataMap["data"].(map[string]interface{}); ok {
 			if messages, ok := data["messages"].([]interface{}); ok {
-				result := make([]string, len(messages))
-				current := qq_lastTime
+				result := make([]Message, len(messages))
+				current := q.lastTime
 				for i, v := range messages {
 					if msg, ok := v.(map[string]interface{}); ok {
 						time := msg["time"].(float64)
 						if time > current {
-							result[i] = msg["raw_message"].(string)
-							qq_lastTime = max(qq_lastTime, time)
+							result[i] = Message{
+								Content: msg["raw_message"].(string),
+								Type:    "text",
+							}
+							q.lastTime = max(q.lastTime, time)
 						}
 					}
 				}

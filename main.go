@@ -1,38 +1,63 @@
 package main
 
 import (
+	"bot/bot"
+	"bot/msg"
+	"bot/util"
+	"fmt"
 	"time"
-	"wxbot/bot"
-	"wxbot/msg"
 )
 
+var globalConfig util.Config
+var globalBot *bot.Bot
+var messageChan chan msg.Message
+
 func main() {
-	bot := bot.NewBot()
-
-	bot.Run()
-
-	msgChan := make(chan string)
-
-	go getQQMessage(msgChan)
-	go getMxMessage(msgChan)
+	initBot()
+	start()
 
 	for {
-		for message := range msgChan {
-			bot.SendMessage("yyyyy", message)
+		for message := range messageChan {
+			globalBot.SendMessage("yyyyy", message)
 		}
 	}
 }
 
-func getQQMessage(msgChan chan string) {
-	for {
-		msg.QQMessage(msgChan)
-		time.Sleep(1 * time.Minute)
+func initBot() {
+	var err error
+	globalConfig, err = util.LoadConfig("config.yaml")
+	if err != nil {
+		fmt.Printf("load config error: %+v", err.Error())
+		return
 	}
+
+	globalBot = bot.NewBot()
+	globalBot.Run()
+
+	messageChan = make(chan msg.Message)
 }
 
-func getMxMessage(msgChan chan string) {
+func start() {
+	mx := &msg.MxMessage{
+		Host:  globalConfig.MX.Host,
+		Token: globalConfig.MX.Token,
+	}
+
+	qq := &msg.QQMessage{
+		Host:  globalConfig.QQ.Host,
+		Group: globalConfig.QQ.Group,
+	}
+
+	go getMessage(mx)
+	go getMessage(qq)
+}
+
+func getMessage(mp msg.MessageProducer) {
 	for {
-		msg.MxMessage(msgChan)
+		messages := mp.GetMessage()
+		for _, msg := range messages {
+			messageChan <- msg
+		}
 		time.Sleep(1 * time.Minute)
 	}
 }
